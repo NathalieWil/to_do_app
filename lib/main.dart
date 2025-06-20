@@ -30,20 +30,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> _tasks = [];
+  final List<Map<String, dynamic>> _tasks = [];
   final TextEditingController _taskController = TextEditingController();
 
   void _addTask() {
     String newTask = _taskController.text.trim();
     if (newTask.isNotEmpty) {
       setState(() {
-        _tasks.add(newTask);
+        _tasks.add({'text': newTask, 'completed': false});
         _taskController.clear();
       });
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Tarea agregada')));
+      ).showSnackBar(const SnackBar(content: Text('Tarea agregada')));
     }
   }
 
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Tarea eliminada')));
+    ).showSnackBar(const SnackBar(content: Text('Tarea eliminada')));
   }
 
   @override
@@ -94,11 +94,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       : ListView.builder(
                         itemCount: _tasks.length,
                         itemBuilder: (context, index) {
+                          final task = _tasks[index];
                           return Card(
                             elevation: 2,
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
-                              title: Text(_tasks[index]),
+                              leading: Checkbox(
+                                value: task['completed'],
+                                onChanged: (value) {
+                                  setState(() {
+                                    task['completed'] = value!;
+                                  });
+                                },
+                              ),
+                              title: Text(
+                                task['text'],
+                                style: TextStyle(
+                                  decoration:
+                                      task['completed']
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
+                                ),
+                              ),
                               trailing: IconButton(
                                 icon: const Icon(
                                   Icons.delete,
