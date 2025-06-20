@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const ToDoApp());
@@ -33,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Map<String, dynamic>> _tasks = [];
   final TextEditingController _taskController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
   void _addTask() {
     String newTask = _taskController.text.trim();
     if (newTask.isNotEmpty) {
@@ -41,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _taskController.clear();
       });
 
+      _saveTasks();
+      print("💾 Tarea agregada: $newTask");
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Tarea agregada')));
@@ -48,13 +59,45 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _removeTask(int index) {
+    final removed = _tasks[index]['text'];
     setState(() {
       _tasks.removeAt(index);
     });
 
+    _saveTasks();
+    print("🗑️ Tarea eliminada: $removed");
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Tarea eliminada')));
+  }
+
+  void _saveTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = json.encode(_tasks);
+    await prefs.setString('tasks', data);
+    print("✅ Guardado en shared_preferences: $data");
+  }
+
+  void _loadTasks() async {
+    print("📥 Intentando cargar tareas...");
+    final prefs = await SharedPreferences.getInstance();
+    String? taskData = prefs.getString('tasks');
+
+    if (taskData != null) {
+      try {
+        final decoded = List<Map<String, dynamic>>.from(json.decode(taskData));
+        setState(() {
+          _tasks.clear();
+          _tasks.addAll(decoded);
+        });
+        print("📦 Tareas cargadas: $decoded");
+      } catch (e) {
+        print("❌ Error al decodificar tareas: $e");
+      }
+    } else {
+      print("⚠️ No se encontraron tareas guardadas.");
+    }
   }
 
   @override
@@ -65,7 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Campo de texto y botón
             Row(
               children: [
                 Expanded(
@@ -85,8 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Lista de tareas
             Expanded(
               child:
                   _tasks.isEmpty
@@ -105,6 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   setState(() {
                                     task['completed'] = value!;
                                   });
+                                  _saveTasks();
+                                  print(
+                                    "☑️ Tarea actualizada: ${task['text']} → ${value!}",
+                                  );
                                 },
                               ),
                               title: Text(
