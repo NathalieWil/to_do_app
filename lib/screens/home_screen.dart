@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/task.dart';
-import '../services/storage_service.dart';
-import '../widgets/task_tile.dart';
 import '../widgets/theme_toggle.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/task_tile.dart';
+import '../services/storage_service.dart';
+import '../models/task.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool isDark;
@@ -18,7 +18,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<Task> _tasks = [];
   final TextEditingController _controller = TextEditingController();
-  final StorageService _storage = StorageService();
   List<Task> _lastDeletedTasks = [];
 
   @override
@@ -28,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadTasks() async {
-    final loaded = await _storage.loadTasks();
+    final loaded = await StorageService().loadTasks();
     setState(() {
       _tasks.clear();
       _tasks.addAll(loaded);
@@ -36,17 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _saveTasks() async {
-    await _storage.saveTasks(_tasks);
+    await StorageService().saveTasks(_tasks);
   }
 
   void _addTask() {
-    final text = _controller.text.trim();
+    String text = _controller.text.trim();
     if (text.isEmpty) return;
 
     setState(() {
       _tasks.add(Task(text: text));
-      _controller.clear();
       _sortTasks();
+      _controller.clear();
     });
     _saveTasks();
 
@@ -61,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Confirmación',
       content: '¿Eliminar esta tarea?',
     );
-
     if (confirm != true) return;
 
     final deleted = _tasks.removeAt(index);
@@ -94,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Confirmación',
       content: '¿Eliminar todas las tareas?',
     );
-
     if (confirm != true) return;
 
     _lastDeletedTasks = List<Task>.from(_tasks);
@@ -147,53 +144,41 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      labelText: 'Nueva tarea',
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _addTask(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _addTask,
-                  child: const Text('Agregar'),
-                ),
-              ],
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Nueva tarea',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _addTask(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Expanded(
               child:
                   _tasks.isEmpty
                       ? const Center(child: Text('No hay tareas'))
                       : ListView.builder(
                         itemCount: _tasks.length,
-                        itemBuilder: (_, i) {
-                          final task = _tasks[i];
-                          return TaskTile(
-                            task: task,
-                            onToggle: (val) => _toggleComplete(i, val),
-                            onDelete: () => _deleteTask(i),
-                          );
-                        },
+                        itemBuilder:
+                            (_, i) => TaskTile(
+                              task: _tasks[i],
+                              onDelete: () => _deleteTask(i),
+                              onToggle: (val) => _toggleComplete(i, val),
+                            ),
                       ),
             ),
             if (_tasks.isNotEmpty)
               TextButton.icon(
                 onPressed: _deleteAllTasks,
-                icon: const Icon(Icons.delete_forever, color: Colors.red),
-                label: const Text(
-                  'Eliminar todas',
-                  style: TextStyle(color: Colors.red),
-                ),
+                icon: Icon(Icons.delete_forever),
+                label: const Text('Eliminar todas'),
               ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addTask,
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -8,7 +8,5 @@ class Task {
     return Task(text: json['text'], completed: json['completed'] ?? false);
   }
 
-  Map<String, dynamic> toJson() {
-    return {'text': text, 'completed': completed};
-  }
+  Map<String, dynamic> toJson() => {'text': text, 'completed': completed};
 }
